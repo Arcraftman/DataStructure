@@ -99,18 +99,65 @@ public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V> ,Cloneabl
             this.next = next;
         }
 
-        public final K getKey() { return key; }
+        final K getKey() { return key; }
 
-        public final V getValue() { return value };
+        final V getValue() { return value };
 
-        public final String toString() { return key + "=" + value };
+        final String toString() { return key + "=" + value };
 
         /*
         toString() 方法在 HashMap.Node 中是 重写的，并非直接使用 Object 的默认实现。重写后的方法用于以 key=value 的形式展示键值对信息
         */
 
-        public final int hashCode() {
+        final int hashCode() {
             return Objects.hashCode(key) ^ Objects.hashCode(value);
         }
+
+        /*
+        防止方法被重写
+        当一个方法被 final 修饰后，子类不能重写该方法。
+        这是为了保护方法的行为不被修改，通常在设计类时，如果希望某些方法的逻辑是固定的，避免子类随意更改，可以使用 final 修饰
+        */
+
+        final V setValue(V newValue){
+            V oldValue = value;
+            value = newValue;
+            return oldValue;
+        }
+
+        final boolean equals(Object o){
+            if (o == this){
+                return true;
+            }
+            if (o instanceof Map.Entry){
+                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                if Objects.equals(key, e.getKey()) && Objects.equals(value , e.getValue()) return true;
+            }
+
+            return false;
+        }
+
+        /* Object.class : */
+        /* public static boolean equals(Object a, Object b) { return (a == b) || (a != null && a.equals(b)); } */
+        /* a.equals(b) 的作用
+        默认情况下（如果 a 是 Object 类型，且没有重写 equals 方法）：
+        它的行为等同于 (a == b)，也是比较地址。
+        重写了 equals 方法的类（比如 String、Integer、List 等）：
+        它会比较对象的内容，而不是地址。
+        关键点：
+        equals 是否比较内容，取决于 a 所属的类是否重写了 equals 方法。
+        */
+
+
+        static final int hash(Object key){
+            int h;
+            return (key == null) ? 0 : (h.key.hashCode()) ^ (h >>> 16);
+        }
+
+
+
+
+    
+
         
 
