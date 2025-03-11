@@ -125,34 +125,17 @@ public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V> ,Cloneabl
             return oldValue;
         }
 
-        final boolean equals(Object o){
-            if (o == this){
+
+        public final boolean equals(Object o) {
+            if (o == this)
                 return true;
-            }
-            if (o instanceof Map.Entry){
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
-                if Objects.equals(key, e.getKey()) && Objects.equals(value , e.getValue()) return true;
-            }
 
-            return false;
+            return o instanceof Map.Entry<?, ?> e
+                    && Objects.equals(key, e.getKey())
+                    && Objects.equals(value, e.getValue());
         }
 
-        /* Object.class : */
-        /* public static boolean equals(Object a, Object b) { return (a == b) || (a != null && a.equals(b)); } */
-        /* a.equals(b) 的作用
-        默认情况下（如果 a 是 Object 类型，且没有重写 equals 方法）：
-        它的行为等同于 (a == b)，也是比较地址。
-        重写了 equals 方法的类（比如 String、Integer、List 等）：
-        它会比较对象的内容，而不是地址。
-        关键点：
-        equals 是否比较内容，取决于 a 所属的类是否重写了 equals 方法。
-        */
 
-
-        static final int hash(Object key){
-            int h;
-            return (key == null) ? 0 : (h.key.hashCode()) ^ (h >>> 16);
-        }
 
 
 
