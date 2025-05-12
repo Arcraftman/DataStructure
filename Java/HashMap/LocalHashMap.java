@@ -29,15 +29,19 @@ HashMap 实现了 Serializable，因此可以通过对象流（如 ObjectOutputS
 为什么实现 Serializable？
 使 HashMap 能够持久化到磁盘，或者通过网络传输 */
 
+import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-
-public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V> ,Cloneable ,Serializable {
+public class LocalHashMap<K,V> extends AbstractMap<K,V> implements Map<K,V> ,Cloneable ,Serializable {
     
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4;
     
     static final int MAXIMUM_CAPACITY = 1 << 30;
 
-    static final int DEFAULT_LOAD_FACTOR = 0.75f;
+    static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
     /*
     默认负载因子。
@@ -77,70 +81,40 @@ public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V> ,Cloneabl
     目的：在小容量表中避免树化操作，因为树化操作相对复杂，会增加额外的内存和计算成本。
     设置为 4 * TREEIFY_THRESHOLD 是为了确保哈希表的容量足够大，从而降低哈希冲突的概率，避免不必要的树化。
     */
-
-    static class Node<K,V> implements Map.Entry<K,V> {
-        /*
-        存储位置：桶（Bucket）
-        HashMap 的底层存储结构是一个数组，每个数组的单元被称为一个 桶（bucket）。
-        每个桶中存储的是多个 Node 对象（如果没有哈希冲突，则只有一个 Node）。
-        如果多个键的哈希值落在同一个桶中，则这些键值对会以链表或红黑树的形式存储在桶中。
-        */
-
-
+    static class LocalNode<K,V> implements Map.Entry<K,V> {
         final int hash;
         final K key;
         V value;
-        Node<K,V> next;
+        LocalNode<K,V> next;
 
-        Node(int hash , K key , V value , Node<K,V> next){
+        LocalNode(int hash , K key , V value , LocalNode<K,V> next){
             this.hash = hash;
             this.key = key;
             this.value = value;
             this.next = next;
         }
 
-        final K getKey() { return key; }
-
-        final V getValue() { return value };
-
-        final String toString() { return key + "=" + value };
-
-        /*
-        toString() 方法在 HashMap.Node 中是 重写的，并非直接使用 Object 的默认实现。重写后的方法用于以 key=value 的形式展示键值对信息
-        */
-
-        final int hashCode() {
-            return Objects.hashCode(key) ^ Objects.hashCode(value);
-        }
-
-        /*
-        防止方法被重写
-        当一个方法被 final 修饰后，子类不能重写该方法。
-        这是为了保护方法的行为不被修改，通常在设计类时，如果希望某些方法的逻辑是固定的，避免子类随意更改，可以使用 final 修饰
-        */
-
-        final V setValue(V newValue){
+        public final K getKey() { return key ;}
+        public final V getValue()      { return value; }
+        public final String toString() { return key + "=" + value; }
+        public V setValue(V newValue) {
             V oldValue = value;
             value = newValue;
             return oldValue;
         }
 
+        public final boolean equals(Object o){
+            if ( o == this ) return true;
 
-        public final boolean equals(Object o) {
-            if (o == this)
-                return true;
-
-            return o instanceof Map.Entry<?, ?> e
-                    && Objects.equals(key, e.getKey())
-                    && Objects.equals(value, e.getValue());
+            return o instanceof Map.Entry<?,?> e && Objects.equals(key,e.getKey()) && Objects.equals(value, e.getValue());
         }
+        
+        };
 
 
+    }
 
 
-
+}
 
     
-
-        
-
