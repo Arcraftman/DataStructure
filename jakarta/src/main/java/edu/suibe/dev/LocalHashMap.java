@@ -30,16 +30,18 @@ HashMap 实现了 Serializable，因此可以通过对象流（如 ObjectOutputS
 为什么实现 Serializable？
 使 HashMap 能够持久化到磁盘，或者通过网络传输 */
 
-import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 
-public class LocalHashMap<K, V> extends AbstractMap<K, V> implements Map<K,V>  {
+import org.w3c.dom.Node;
+
+public class LocalHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4;
 
@@ -303,5 +305,43 @@ public class LocalHashMap<K, V> extends AbstractMap<K, V> implements Map<K,V>  {
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
+    final LocalNode<K,V>[] resize() {
+        LocalNode<K,V>[] oldTab = table;
+        int oldCap = (oldTab == null) ? 0 : oldTab.length;
+        int oldThr = threshold;
+        int newCap, newThr = 0;
+        if (oldCap > 0) {
+            if (oldCap >= MAXIMUM_CAPACITY) {
+                threshold = Integer.MAX_VALUE;
+                return oldTab;
+            }
+            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                     oldCap >= DEFAULT_INITIAL_CAPACITY)
+                newThr = oldThr << 1; // double threshold
+        }
+        else if (oldThr > 0) // initial capacity was placed in threshold
+            newCap = oldThr;
+        else {               // zero initial threshold signifies using defaults
+            newCap = DEFAULT_INITIAL_CAPACITY;
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+        }
+        if (newThr == 0) {
+            float ft = (float)newCap * loadFactor;
+            newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                      (int)ft : Integer.MAX_VALUE);
+        }
+        threshold = newThr;
+    }
+
+    public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+    }
+
+    final V putVal(int hash ,K key, V value,boolean onlyIfAbsent , boolean evict){
+        LocalNode<K,V>[] t ; LocalNode<K,V> p ; int n , i;
+       if ((t = table) == null || (n = t.length) == 0) {
+            n = (t = resize()).length;
+       }
+    }
 
 }
