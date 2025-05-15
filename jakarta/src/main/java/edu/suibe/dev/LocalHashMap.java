@@ -32,14 +32,11 @@ HashMap 实现了 Serializable，因此可以通过对象流（如 ObjectOutputS
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
-
-import org.w3c.dom.Node;
 
 public class LocalHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 
@@ -98,6 +95,8 @@ public class LocalHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
     transient int size;
 
     transient LocalNode<K, V>[] table;
+
+    transient int modCount;
 
     public LocalHashMap() {
         this.loadFactor = DEFAULT_LOAD_FACTOR;
@@ -305,43 +304,54 @@ public class LocalHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
-    final LocalNode<K,V>[] resize() {
-        LocalNode<K,V>[] oldTab = table;
-        int oldCap = (oldTab == null) ? 0 : oldTab.length;
-        int oldThr = threshold;
-        int newCap, newThr = 0;
-        if (oldCap > 0) {
-            if (oldCap >= MAXIMUM_CAPACITY) {
-                threshold = Integer.MAX_VALUE;
-                return oldTab;
-            }
-            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
-                     oldCap >= DEFAULT_INITIAL_CAPACITY)
-                newThr = oldThr << 1; // double threshold
-        }
-        else if (oldThr > 0) // initial capacity was placed in threshold
-            newCap = oldThr;
-        else {               // zero initial threshold signifies using defaults
-            newCap = DEFAULT_INITIAL_CAPACITY;
-            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
-        }
-        if (newThr == 0) {
-            float ft = (float)newCap * loadFactor;
-            newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
-                      (int)ft : Integer.MAX_VALUE);
-        }
-        threshold = newThr;
+    LocalNode<K,V> newNode(int hash, K key, V value, LocalNode<K,V> next) {
+        return new LocalNode<>(hash, key, value, next);
     }
-
     public V put(K key, V value) {
         return putVal(hash(key), key, value, false, true);
     }
 
-    final V putVal(int hash ,K key, V value,boolean onlyIfAbsent , boolean evict){
-        LocalNode<K,V>[] t ; LocalNode<K,V> p ; int n , i;
-       if ((t = table) == null || (n = t.length) == 0) {
-            n = (t = resize()).length;
-       }
+    final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+        LocalNode<K,V>[] tab; LocalNode<K,V> p; int n, i;
+        if ((tab = table) == null || (n = tab.length) == 0)
+            n = (tab = resize()).length;
+        if ((p = tab[i = (n - 1) & hash]) == null)
+            tab[i] = newNode(hash, key, value, null);
+        else {
+            LocalNode<K,V> e; K k;
+            if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k))))
+                e = p;
+            else if (p instanceof TreeNode)
+                e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+            else {
+                for (int binCount = 0; ; ++binCount) {
+                    if ((e = p.next) == null) {
+                        p.next = newNode(hash, key, value, null);
+                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                            treeifyBin(tab, hash);
+                        break;
+                    }
+                    if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k))))
+                        break;
+                    p = e;
+                }
+            }
+            if (e != null) { // existing mapping for key
+                V oldValue = e.value;
+                if (!onlyIfAbsent || oldValue == null)
+                    e.value = value;
+                afterNodeAccess(e);
+                return oldValue;
+            }
+        }
+        ++modCount;
+        if (++size > threshold)
+            resize();
+        afterNodeInsertion(evict);
+        return null;
     }
 
 }
